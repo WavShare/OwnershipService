@@ -1,40 +1,52 @@
 services:
   ownership-service:
+    container_name: ownership-service
+    depends_on:
+      ownership-db:
+        condition: "service_healthy"
+    image: ownership-service
     build:
-      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
     ports:
-      - 8086:8086
+      - "8092:8092"
+    networks:
+      - wavshare-nw
+  ownership-db:
+    container_name: ownership-db
+    image: mongo:7.0.8-rc0-jammy
+    restart: unless-stopped
+    environment:
+      MONGO_PORT: 27022
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
+      MONGO_USERNAME: ${MONGO_USERNAME}
+      MONGO_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_DATABASE: ${MONGO_DATABASE}
+    command: ["mongod", "--port", "27022"]
+    ports:
+      - "27022:27022"
+    expose:
+      - 27022
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27022/test --quiet
+      interval: 10s
+      timeout: 15s
+      retries: 3
+      start_period: 20s
+    volumes:
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      - ownership-db-volume:/var/lib/ownership-db
+    networks:
+      - wavshare-nw
 
-# The commented out section below is an example of how to define a PostgreSQL
-# database that your application can use. `depends_on` tells Docker Compose to
-# start the database before your application. The `db-data` volume persists the
-# database data between container restarts. The `db-password` secret is used
-# to set the database password. You must create `db/password.txt` and add
-# a password of your choosing to it before running `docker-compose up`.
-#     depends_on:
-#       db:
-#         condition: service_healthy
-#   db:
-#     image: postgres
-#     restart: always
-#     user: postgres
-#     secrets:
-#       - db-password
-#     volumes:
-#       - db-data:/var/lib/postgresql/data
-#     environment:
-#       - POSTGRES_DB=example
-#       - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
-#     expose:
-#       - 5432
-#     healthcheck:
-#       test: [ "CMD", "pg_isready" ]
-#       interval: 10s
-#       timeout: 5s
-#       retries: 5
-# volumes:
-#   db-data:
-# secrets:
-#   db-password:
-#     file: db/password.txt
+volumes:
+  ownership-db-volume:
 
+networks:
+  wavshare-nw:
+    name: wavshare-nw
+    external: true
