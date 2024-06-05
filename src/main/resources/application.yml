@@ -1,4 +1,8 @@
 spring:
+  data:
+    mongodb:
+      uri: ${MONGO_URI}
+      database: ${MONGO_DATABASE}
   rabbitmq:
     host: ${RABBIT_HOST}
     port: ${RABBIT_PORT}

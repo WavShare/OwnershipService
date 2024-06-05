@@ -7,8 +7,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class Producer {
 
+    private final RabbitTemplate rabbitTemplate;
+
     @Autowired
-    private RabbitTemplate rabbitTemplate;
+    public Producer(RabbitTemplate rabbitTemplate) {
+        this.rabbitTemplate = rabbitTemplate;
+    }
 
     public void sendMessageToEmail(String message) {
         rabbitTemplate.convertAndSend("ownership_email", message);
